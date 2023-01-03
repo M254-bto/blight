@@ -8,23 +8,44 @@ import base64
 # create streamlit page with title "Potato leaf disease classification"
 
 st.title("Potato leaf disease classification")
-CLASS_NAMES = ["Early Blight", "Late Blight", "Healthy"]
+CLASS_NAMES = ['late_blight', 'healthy', 'early_blight']
 
 
 def load_model():
     model = tf.keras.models.load_model('1.0/1.0')
-    st.write(type(model.summary()))
+    st.write(model.summary())
+    return model
 
 
+st.session_state['model'] = load_model()
 
-def image_load_process():
-    image = st.file_upload("upload an image")
+image = st.file_uploader("upload an image", type = ['jpg', 'jpeg', 'webp', 'png'])
+if image is not None:
+        st.session_state[image] = image
+
+def image_load_process(image):
+    if image is not None:
+        #image file to byte-like
+        image = Image.open(image)
+        image = image.resize((256, 256))
+        image = np.array(image)
+        image = np.expand_dims(image, axis=0)
+        return image
 
 
-
-
-
-
+def make_prediction(image, model):
+    predictions = model.predict(image)
+    predicted_class = CLASS_NAMES[np.argmax(predictions[0])]
+    confidence = np.max(predictions[0]) * 100
+    return {
+        'class': predicted_class,
+        'confidence': float(confidence)
+    }
+st.write(st.session_state)
+if st.button("Predict"):
+    st.write(make_prediction(image_load_process(image), load_model()))
+else:
+    st.write("Click the button to predict")
 
 
 
