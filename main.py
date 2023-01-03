@@ -8,13 +8,37 @@ import base64
 # create streamlit page with title "Potato leaf disease classification"
 
 st.title("Potato leaf disease classification")
-CLASS_NAMES = ['late_blight', 'healthy', 'early_blight']
+CLASS_NAMES = ['Early blight', 'healthy', 'Late blight']
 
 
 def load_model():
     model = tf.keras.models.load_model('1.0/1.0')
-    st.write(model.summary())
     return model
+#set image background
+
+def get_base64_of_bin_file(bin_file):
+    with open(bin_file, 'rb') as f:
+        data = f.read()
+    return base64.b64encode(data).decode()
+
+def set_png_as_page_bg(png_file):
+    bin_str = get_base64_of_bin_file(png_file) 
+    page_bg_img = '''
+    <style>
+    .stApp {
+    background-image: url("data:image/png;base64,%s");
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-attachment: scroll; # doesn't work
+    opacity: 0.5;
+    }
+    </style>
+    ''' % bin_str
+    
+    st.markdown(page_bg_img, unsafe_allow_html=True)
+    return
+
+set_png_as_page_bg('background.jpg')
 
 
 st.session_state['model'] = load_model()
@@ -22,6 +46,7 @@ st.session_state['model'] = load_model()
 image = st.file_uploader("upload an image", type = ['jpg', 'jpeg', 'webp', 'png'])
 if image is not None:
         st.session_state[image] = image
+        st.image(image, caption='Uploaded Image.', use_column_width=True)
 
 def image_load_process(image):
     if image is not None:
@@ -41,11 +66,14 @@ def make_prediction(image, model):
         'class': predicted_class,
         'confidence': float(confidence)
     }
-st.write(st.session_state)
-if st.button("Predict"):
-    st.write(make_prediction(image_load_process(image), load_model()))
-else:
-    st.write("Click the button to predict")
+
+
+if image is not None:
+    if st.button("Predict"):
+        preds = make_prediction(image_load_process(image), load_model())
+        st.header(f"Predicted to be {preds['class']}, with confidence {preds['confidence']}%")
+    else:
+        st.write("Click the button to predict")
 
 
 
